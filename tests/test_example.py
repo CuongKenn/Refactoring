@@ -4,7 +4,9 @@ from app.example import (
     calculate,
     calculate_refactored,
     calculate_sum,
-    calculate_product
+    calculate_product,
+    subtract_numbers,
+    multiply_numbers
 )
 
 
@@ -66,3 +68,19 @@ def test_refactor_consistency():
     for a, b, c in test_cases:
         assert calculate(a, b, c) == calculate_refactored(a, b, c), \
             f"Mismatch for inputs ({a}, {b}, {c})"
+
+
+def test_subtract_numbers():
+    """Test hàm subtract_numbers"""
+    assert subtract_numbers(5, 3) == 2
+    assert subtract_numbers(10, 7) == 3
+    assert subtract_numbers(0, 0) == 0
+    assert subtract_numbers(-5, -3) == -2
+
+
+def test_multiply_numbers():
+    """Test hàm multiply_numbers"""
+    assert multiply_numbers(3, 4) == 12
+    assert multiply_numbers(0, 5) == 0
+    assert multiply_numbers(-2, 3) == -6
+    assert multiply_numbers(-2, -3) == 6

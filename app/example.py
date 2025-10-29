@@ -40,3 +40,17 @@ def calculate_refactored(a, b, c):
         return calculate_sum(a, b, c)
     else:
         return calculate_product(a, b, c)
+
+
+def subtract_numbers(a, b):
+    """
+    Hàm trừ hai số - thêm để demo CI/CD
+    """
+    return a - b
+
+
+def multiply_numbers(a, b):
+    """
+    Hàm nhân hai số - thêm để demo CI/CD
+    """
+    return a * b
