@@ -1,5 +1,7 @@
 # Python Refactor CI/CD Demo
 
+🚀 **CI/CD Status:** [![Python CI/CD Pipeline](https://github.com/CuongKenn/Refactoring/actions/workflows/python-ci.yml/badge.svg)](https://github.com/CuongKenn/Refactoring/actions/workflows/python-ci.yml)
+
 ## Mô tả
 
 Đây là một dự án demo về việc tích hợp CI/CD với Python, bao gồm:
