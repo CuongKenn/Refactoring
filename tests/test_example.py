@@ -1,172 +1,146 @@
 # tests/test_example.py
 """
-Test suite - CÓ NHIỀU LỖI FORMATTING để test auto-fix
+Tests for Library - LỖI FORMAT
 """
-import json
-
 import pytest
-
-from app.example import DataProcessor, DataValidator, UserManager, calculate_discount, process_json_data
-
-
-class TestDataValidator:
-    """Test DataValidator - LỖI FORMATTING"""
-
-    def test_validate_email_valid(self):
-        """Test email valid"""
-        assert DataValidator.validate_email("test@example.com")
-        assert DataValidator.validate_email("user@domain.com")
-
-    def test_validate_email_invalid(self):
-        """Test email invalid"""
-        assert DataValidator.validate_email("") == False
-        assert DataValidator.validate_email("notanemail") == False
-        assert DataValidator.validate_email("@example.com") == False
-
-    def test_validate_age(self):
-        """Test validate age"""
-        assert DataValidator.validate_age(25)
-        assert DataValidator.validate_age(0)
-        assert DataValidator.validate_age(150)
-        assert DataValidator.validate_age(-1) == False
-        assert DataValidator.validate_age(151) == False
-
-    def test_validate_phone_valid(self):
-        """Test phone valid"""
-        assert DataValidator.validate_phone("0123456789")
-        assert DataValidator.validate_phone("0987654321")
-
-    def test_validate_phone_invalid(self):
-        """Test phone invalid"""
-        assert DataValidator.validate_phone("123456789") == False
-        assert DataValidator.validate_phone("01234567890") == False
+from app.example import Book,Member,Library,generate_isbn,calculate_late_fee
 
 
-class TestUserManager:
-    """Test UserManager - LỖI FORMATTING"""
-
-    def test_add_user_success(self):
-        """Test add user OK"""
-        manager = UserManager()
-        result = manager.add_user("Nguyen Van A", "test@example.com", 25, "0123456789")
-
-        assert result["success"]
-        assert result["user"]["name"] == "Nguyen Van A"
-        assert len(manager.users) == 1
-
-    def test_add_user_invalid_email(self):
-        """Test add user invalid email"""
-        manager = UserManager()
-        result = manager.add_user("Test", "invalidemail", 25, "0123456789")
-
-        assert result["success"] == False
-        assert "Email invalid" in result["errors"]
-
-    def test_get_user_by_id(self):
-        """Test get user by ID"""
-        manager = UserManager()
-        manager.add_user("User 1", "user1@example.com", 25, "0123456789")
-
-        user = manager.get_user_by_id(1)
-        assert user is not None
-        assert user["name"] == "User 1"
-
-        user = manager.get_user_by_id(999)
-        assert user is None
-
-    def test_update_user(self):
-        """Test update user"""
-        manager = UserManager()
-        manager.add_user("Old", "test@example.com", 25, "0123456789")
-
-        result = manager.update_user(1, name="New", age=26)
-        assert result["success"]
-        assert result["user"]["name"] == "New"
-
-    def test_delete_user(self):
-        """Test delete user"""
-        manager = UserManager()
-        manager.add_user("User 1", "user1@example.com", 25, "0123456789")
-
-        assert len(manager.users) == 1
-        result = manager.delete_user(1)
-        assert result
-        assert len(manager.users) == 0
+class TestBook:
+    """Test Book"""
+    
+    def test_book_creation(self):
+        """Test create"""
+        book=Book(1,"Python","John","ISBN123",5)
+        
+        assert book.book_id==1
+        assert book.title=="Python"
+        assert book.quantity==5
+    
+    def test_book_borrow(self):
+        """Test borrow"""
+        book=Book(1,"Test","Author","ISBN",2)
+        
+        assert book.borrow()==True
+        assert book.available==1
+        
+        assert book.borrow()==True
+        assert book.available==0
+        
+        assert book.borrow()==False
+    
+    def test_book_return(self):
+        """Test return"""
+        book=Book(1,"Test","Author","ISBN",2)
+        book.available=0
+        
+        assert book.return_book()==True
+        assert book.available==1
 
 
-class TestDataProcessor:
-    """Test DataProcessor - LỖI FORMATTING"""
-
-    def test_calculate_statistics(self):
-        """Test calculate stats"""
-        numbers = [1, 2, 3, 4, 5]
-        stats = DataProcessor.calculate_statistics(numbers)
-
-        assert stats["count"] == 5
-        assert stats["sum"] == 15
-        assert stats["average"] == 3.0
-        assert stats["median"] == 3
-
-    def test_calculate_statistics_empty(self):
-        """Test empty list"""
-        stats = DataProcessor.calculate_statistics([])
-        assert "error" in stats
-
-    def test_filter_outliers(self):
-        """Test filter outliers"""
-        numbers = [1, 2, 3, 4, 5, 100]
-        filtered = DataProcessor.filter_outliers(numbers, threshold=2.0)
-
-        assert 100 not in filtered
-
-    def test_group_by_range(self):
-        """Test group by range"""
-        numbers = [5, 15, 25, 35]
-        groups = DataProcessor.group_by_range(numbers, range_size=10)
-
-        assert "0-9" in groups
-        assert "10-19" in groups
+class TestMember:
+    """Test Member"""
+    
+    def test_member_creation(self):
+        """Test create"""
+        member=Member(1,"John","john@test.com","0123456789")
+        
+        assert member.member_id==1
+        assert member.name=="John"
+        assert len(member.borrowed_books)==0
+    
+    def test_can_borrow(self):
+        """Test can borrow"""
+        member=Member(1,"Test","test@test.com","0123")
+        
+        assert member.can_borrow(5)==True
+        
+        member.borrowed_books=[1,2,3,4,5]
+        assert member.can_borrow(5)==False
 
 
-def test_process_json_data_valid():
-    """Test JSON valid"""
-    json_string = '{"name":"Test","age":25}'
-    result = process_json_data(json_string)
+class TestLibrary:
+    """Test Library"""
+    
+    def test_library_creation(self):
+        """Test create"""
+        library=Library("City Library")
+        
+        assert library.name=="City Library"
+        assert len(library.books)==0
+    
+    def test_add_book(self):
+        """Test add book"""
+        library=Library("Test")
+        book=library.add_book("Python","John","ISBN",3)
+        
+        assert book.book_id==1
+        assert len(library.books)==1
+    
+    def test_register_member(self):
+        """Test register"""
+        library=Library("Test")
+        member=library.register_member("Jane","jane@test.com","0987")
+        
+        assert member.member_id==1
+        assert len(library.members)==1
+    
+    def test_borrow_book_success(self):
+        """Test borrow OK"""
+        library=Library("Test")
+        book=library.add_book("Book","Author","ISBN",2)
+        member=library.register_member("User","test@test.com","0123")
+        
+        result=library.borrow_book(member.member_id,book.book_id)
+        
+        assert result["success"]==True
+        assert book.available==1
+    
+    def test_return_book_success(self):
+        """Test return OK"""
+        library=Library("Test")
+        book=library.add_book("Book","Author","ISBN",1)
+        member=library.register_member("User","test@test.com","0123")
+        
+        library.borrow_book(member.member_id,book.book_id)
+        result=library.return_book(member.member_id,book.book_id)
+        
+        assert result["success"]==True
+        assert book.available==1
+    
+    def test_search_books(self):
+        """Test search"""
+        library=Library("Test")
+        library.add_book("Python Programming","John","ISBN1")
+        library.add_book("Java Basics","Jane","ISBN2")
+        
+        results=library.search_books("Python")
+        assert len(results)==1
+    
+    def test_get_statistics(self):
+        """Test stats"""
+        library=Library("Test")
+        library.add_book("Book 1","Author","ISBN1",3)
+        library.add_book("Book 2","Author","ISBN2",2)
+        member=library.register_member("Test","test@test.com","0123")
+        library.borrow_book(member.member_id,1)
+        
+        stats=library.get_statistics()
+        
+        assert stats["total_books"]==5
+        assert stats["borrowed_books"]==1
 
-    assert result["success"]
-    assert result["data"]["name"] == "Test"
+
+def test_generate_isbn():
+    """Test ISBN"""
+    isbn=generate_isbn()
+    
+    assert isbn.startswith("978-")
+    assert len(isbn)>=15
 
 
-def test_process_json_data_invalid():
-    """Test JSON invalid"""
-    json_string = "{invalid}"
-    result = process_json_data(json_string)
-
-    assert result["success"] == False
-
-
-def test_calculate_discount_basic():
-    """Test discount basic"""
-    price = 100.0
-    discount = 10.0
-    final_price = calculate_discount(price, discount)
-
-    assert final_price == 90.0
-
-
-def test_calculate_discount_with_member():
-    """Test discount member"""
-    price = 100.0
-    discount = 10.0
-    final_price = calculate_discount(price, discount, is_member=True)
-
-    assert final_price == 85.5
-
-
-def test_calculate_discount_invalid():
-    """Test discount invalid"""
-    with pytest.raises(ValueError):
-        calculate_discount(-100, 10)
-
-    with pytest.raises(ValueError):
-        calculate_discount(100, 150)
+def test_calculate_late_fee():
+    """Test late fee"""
+    assert calculate_late_fee(0)==0.0
+    assert calculate_late_fee(3)==15000.0
+    assert calculate_late_fee(10)==50000.0

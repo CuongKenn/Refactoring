@@ -1,175 +1,169 @@
 # app/example.py
 """
-Module demo phức tạp với NHIỀU LỖI FORMATTING để test auto-fix
+Library Management System - Test auto-fix với LỖI FORMAT
 """
-import json
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Union
+from datetime import datetime,timedelta
+from typing import List,Dict,Optional
+import random
 
 
-class DataValidator:
-    """Validator cho dữ liệu - CÓ LỖI FORMATTING"""
-
-    @staticmethod
-    def validate_email(email: str) -> bool:
-        """Validate email - LỖI SPACING"""
-        if not email or "@" not in email:
-            return False
-        parts = email.split("@")
-        if len(parts) != 2:
-            return False
-        return len(parts[0]) > 0 and len(parts[1]) > 0
-
-    @staticmethod
-    def validate_age(age: int) -> bool:
-        """Validate tuổi"""
-        return 0 <= age <= 150
-
-    @staticmethod
-    def validate_phone(phone: str) -> bool:
-        """Validate SĐT VN"""
-        phone = phone.replace(" ", "").replace("-", "")
-        if not phone.startswith("0"):
-            return False
-        return len(phone) == 10 and phone.isdigit()
-
-
-class UserManager:
-    """Manager users - LỖI FORMATTING"""
-
-    def __init__(self):
-        self.users: List[Dict] = []
-        self.validator = DataValidator()
-
-    def add_user(self, name: str, email: str, age: int, phone: str) -> Dict:
-        """Thêm user"""
-        errors = []
-
-        if not name or len(name.strip()) < 2:
-            errors.append("Tên phải >=2 ký tự")
-
-        if not self.validator.validate_email(email):
-            errors.append("Email invalid")
-
-        if not self.validator.validate_age(age):
-            errors.append("Tuổi 0-150")
-
-        if not self.validator.validate_phone(phone):
-            errors.append("SĐT invalid")
-
-        if errors:
-            return {"success": False, "errors": errors}
-
-        user = {
-            "id": len(self.users) + 1,
-            "name": name.strip(),
-            "email": email.lower(),
-            "age": age,
-            "phone": phone,
-            "created_at": datetime.now().isoformat(),
-        }
-        self.users.append(user)
-        return {"success": True, "user": user}
-
-    def get_user_by_id(self, user_id: int) -> Optional[Dict]:
-        """Lấy user by ID"""
-        for user in self.users:
-            if user["id"] == user_id:
-                return user
-        return None
-
-    def get_users_by_age_range(self, min_age: int, max_age: int) -> List[Dict]:
-        """Lấy users trong khoảng tuổi"""
-        return [u for u in self.users if min_age <= u["age"] <= max_age]
-
-    def update_user(self, user_id: int, **kwargs) -> Dict:
-        """Update user"""
-        user = self.get_user_by_id(user_id)
-        if not user:
-            return {"success": False, "error": "User not found"}
-
-        for key, value in kwargs.items():
-            if key in user and key != "id":
-                user[key] = value
-
-        return {"success": True, "user": user}
-
-    def delete_user(self, user_id: int) -> bool:
-        """Xóa user"""
-        user = self.get_user_by_id(user_id)
-        if user:
-            self.users.remove(user)
+class Book:
+    """Book class - LỖI FORMAT"""
+    
+    def __init__(self,book_id:int,title:str,author:str,isbn:str,quantity:int=1):
+        self.book_id=book_id
+        self.title=title
+        self.author=author
+        self.isbn=isbn
+        self.quantity=quantity
+        self.available=quantity
+    
+    def to_dict(self)->Dict:
+        """Convert to dict"""
+        return {"book_id":self.book_id,"title":self.title,"author":self.author,"isbn":self.isbn,"quantity":self.quantity,"available":self.available}
+    
+    def is_available(self)->bool:
+        """Check available"""
+        return self.available>0
+    
+    def borrow(self)->bool:
+        """Borrow book"""
+        if self.available>0:
+            self.available-=1
+            return True
+        return False
+    
+    def return_book(self)->bool:
+        """Return book"""
+        if self.available<self.quantity:
+            self.available+=1
             return True
         return False
 
 
-class DataProcessor:
-    """Xử lý data - LỖI FORMATTING"""
-
-    @staticmethod
-    def calculate_statistics(numbers: List[Union[int, float]]) -> Dict:
-        """Tính stats"""
-        if not numbers:
-            return {"error": "Empty list"}
-
-        total = sum(numbers)
-        count = len(numbers)
-        average = total / count
-        sorted_nums = sorted(numbers)
-
-        if count % 2 == 0:
-            median = (sorted_nums[count // 2 - 1] + sorted_nums[count // 2]) / 2
-        else:
-            median = sorted_nums[count // 2]
-
-        return {"count": count, "sum": total, "average": average, "median": median, "min": min(numbers), "max": max(numbers)}
-
-    @staticmethod
-    def filter_outliers(numbers: List[float], threshold: float = 2.0) -> List[float]:
-        """Loại outliers"""
-        if len(numbers) < 3:
-            return numbers
-
-        mean = sum(numbers) / len(numbers)
-        variance = sum((x - mean) ** 2 for x in numbers) / len(numbers)
-        std_dev = variance**0.5
-
-        return [x for x in numbers if abs(x - mean) <= threshold * std_dev]
-
-    @staticmethod
-    def group_by_range(numbers: List[int], range_size: int = 10) -> Dict[str, List[int]]:
-        """Nhóm số theo range"""
-        if not numbers or range_size <= 0:
-            return {}
-
-        groups = {}
-        for num in numbers:
-            range_key = f"{(num//range_size)*range_size}-{(num//range_size)*range_size+range_size-1}"
-            if range_key not in groups:
-                groups[range_key] = []
-            groups[range_key].append(num)
-
-        return groups
+class Member:
+    """Member class - LỖI FORMAT"""
+    
+    def __init__(self,member_id:int,name:str,email:str,phone:str):
+        self.member_id=member_id
+        self.name=name
+        self.email=email
+        self.phone=phone
+        self.borrowed_books:List[int]=[]
+        self.join_date=datetime.now()
+    
+    def to_dict(self)->Dict:
+        """To dict"""
+        return {"member_id":self.member_id,"name":self.name,"email":self.email,"phone":self.phone,"borrowed_books":self.borrowed_books,"join_date":self.join_date.isoformat()}
+    
+    def can_borrow(self,max_books:int=5)->bool:
+        """Can borrow more"""
+        return len(self.borrowed_books)<max_books
+    
+    def add_borrowed_book(self,book_id:int)->None:
+        """Add borrowed book"""
+        if book_id not in self.borrowed_books:
+            self.borrowed_books.append(book_id)
+    
+    def remove_borrowed_book(self,book_id:int)->bool:
+        """Remove book"""
+        if book_id in self.borrowed_books:
+            self.borrowed_books.remove(book_id)
+            return True
+        return False
 
 
-def process_json_data(json_string: str) -> Dict:
-    """Process JSON - LỖI FORMATTING"""
-    try:
-        data = json.loads(json_string)
-        return {"success": True, "data": data}
-    except json.JSONDecodeError as e:
-        return {"success": False, "error": str(e)}
+class Library:
+    """Library - LỖI FORMAT"""
+    
+    def __init__(self,name:str):
+        self.name=name
+        self.books:Dict[int,Book]={}
+        self.members:Dict[int,Member]={}
+        self.next_book_id=1
+        self.next_member_id=1
+    
+    def add_book(self,title:str,author:str,isbn:str,quantity:int=1)->Book:
+        """Add book"""
+        book=Book(self.next_book_id,title,author,isbn,quantity)
+        self.books[self.next_book_id]=book
+        self.next_book_id+=1
+        return book
+    
+    def register_member(self,name:str,email:str,phone:str)->Member:
+        """Register member"""
+        member=Member(self.next_member_id,name,email,phone)
+        self.members[self.next_member_id]=member
+        self.next_member_id+=1
+        return member
+    
+    def borrow_book(self,member_id:int,book_id:int)->Dict:
+        """Borrow book"""
+        if member_id not in self.members:
+            return {"success":False,"error":"Member not found"}
+        
+        if book_id not in self.books:
+            return {"success":False,"error":"Book not found"}
+        
+        member=self.members[member_id]
+        book=self.books[book_id]
+        
+        if not member.can_borrow():
+            return {"success":False,"error":"Limit reached"}
+        
+        if not book.is_available():
+            return {"success":False,"error":"Book not available"}
+        
+        if book.borrow():
+            member.add_borrowed_book(book_id)
+            return {"success":True,"message":"Borrowed successfully"}
+        
+        return {"success":False,"error":"Failed to borrow"}
+    
+    def return_book(self,member_id:int,book_id:int)->Dict:
+        """Return book"""
+        if member_id not in self.members:
+            return {"success":False,"error":"Member not found"}
+        
+        if book_id not in self.books:
+            return {"success":False,"error":"Book not found"}
+        
+        member=self.members[member_id]
+        book=self.books[book_id]
+        
+        if book_id not in member.borrowed_books:
+            return {"success":False,"error":"Not borrowed"}
+        
+        if book.return_book():
+            member.remove_borrowed_book(book_id)
+            return {"success":True,"message":"Returned successfully"}
+        
+        return {"success":False,"error":"Failed to return"}
+    
+    def search_books(self,query:str)->List[Book]:
+        """Search books"""
+        query_lower=query.lower()
+        results=[]
+        for book in self.books.values():
+            if query_lower in book.title.lower() or query_lower in book.author.lower():
+                results.append(book)
+        return results
+    
+    def get_statistics(self)->Dict:
+        """Get stats"""
+        total_books=sum(book.quantity for book in self.books.values())
+        available_books=sum(book.available for book in self.books.values())
+        borrowed_books=total_books-available_books
+        
+        return {"total_books":total_books,"available_books":available_books,"borrowed_books":borrowed_books,"total_members":len(self.members)}
 
 
-def calculate_discount(price: float, discount_percent: float, is_member: bool = False) -> float:
-    """Tính giảm giá - LỖI FORMATTING"""
-    if price < 0 or discount_percent < 0 or discount_percent > 100:
-        raise ValueError("Invalid values")
+def generate_isbn()->str:
+    """Generate ISBN - LỖI FORMAT"""
+    return f"978-{random.randint(0,9)}-{random.randint(100,999)}-{random.randint(10000,99999)}-{random.randint(0,9)}"
 
-    discount = price * discount_percent / 100
-    final_price = price - discount
 
-    if is_member:
-        final_price *= 0.95
-
-    return round(final_price, 2)
+def calculate_late_fee(days_overdue:int,rate_per_day:float=5000.0)->float:
+    """Calculate late fee - LỖI FORMAT"""
+    if days_overdue<=0:return 0.0
+    return days_overdue*rate_per_day
