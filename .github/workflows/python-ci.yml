@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest flake8 pytest-cov
+        pip install -r requirements.txt
 
     - name: Run linting with flake8
       run: |
@@ -59,7 +59,8 @@ jobs:
     - name: Install linting tools
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 black isort
+        pip install -r requirements.txt
+        pip install black isort
 
     - name: Run comprehensive linting
       run: |
