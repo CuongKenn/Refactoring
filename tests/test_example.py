@@ -2,11 +2,11 @@
 from app.example import (
     add_numbers,
     calculate,
+    calculate_product,
     calculate_refactored,
     calculate_sum,
-    calculate_product,
+    multiply_numbers,
     subtract_numbers,
-    multiply_numbers
 )
 
 
@@ -26,7 +26,7 @@ def test_calculate():
 
     # Test trường hợp a <= b (tính tích)
     assert calculate(2, 3, 4) == 24  # 2 * 3 * 4
-    assert calculate(1, 1, 5) == 5   # 1 * 1 * 5
+    assert calculate(1, 1, 5) == 5  # 1 * 1 * 5
 
 
 def test_calculate_refactored():
@@ -37,7 +37,7 @@ def test_calculate_refactored():
 
     # Test trường hợp a <= b (tính tích)
     assert calculate_refactored(2, 3, 4) == 24  # 2 * 3 * 4
-    assert calculate_refactored(1, 1, 5) == 5   # 1 * 1 * 5
+    assert calculate_refactored(1, 1, 5) == 5  # 1 * 1 * 5
 
 
 def test_calculate_sum():
@@ -56,18 +56,10 @@ def test_calculate_product():
 
 def test_refactor_consistency():
     """Test để đảm bảo hàm gốc và hàm refactor cho kết quả giống nhau"""
-    test_cases = [
-        (5, 3, 2),
-        (10, 1, 5),
-        (2, 3, 4),
-        (1, 1, 5),
-        (0, 1, 2),
-        (-1, 2, 3)
-    ]
+    test_cases = [(5, 3, 2), (10, 1, 5), (2, 3, 4), (1, 1, 5), (0, 1, 2), (-1, 2, 3)]
 
     for a, b, c in test_cases:
-        assert calculate(a, b, c) == calculate_refactored(a, b, c), \
-            f"Mismatch for inputs ({a}, {b}, {c})"
+        assert calculate(a, b, c) == calculate_refactored(a, b, c), f"Mismatch for inputs ({a}, {b}, {c})"
 
 
 def test_subtract_numbers():

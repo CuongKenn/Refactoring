@@ -1,5 +1,6 @@
 # app/example.py
 
+
 def add_numbers(a, b):
     """
     Hàm cộng hai số
