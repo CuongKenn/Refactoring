@@ -1,171 +1,212 @@
-"""Unit tests for Task Management System"""
-
-from datetime import datetime, timedelta
+"""Tests demonstrating the refactoring improvements"""
 
 import pytest
-
-from app.example import (
-    Project,
-    ProjectStatus,
-    Task,
-    TaskPriority,
-    TaskStatus,
-    User,
-    calculate_project_progress,
-    create_task_with_defaults,
-    estimate_project_delay,
-    find_overdue_tasks,
-    get_high_priority_tasks,
+from app.example import Order as OldOrder, Invoice as OldInvoice
+from app.refactored import (
+    Order as NewOrder, 
+    Invoice as NewInvoice,
+    OrderItem,
+    PriceCalculator,
+    ShippingCalculator,
+    DiscountCode
 )
 
 
-class TestTask:
-    def test_task_creation(self):
-        due_date = datetime.now() + timedelta(days=7)
-        task = Task(
-            task_id="T001", title="Test Task", description="Test Description", priority=TaskPriority.HIGH, due_date=due_date
-        )
-        assert task.task_id == "T001"
-        assert task.status == TaskStatus.TODO
-        assert task.assigned_to is None
-
-    def test_task_assignment(self):
-        due_date = datetime.now() + timedelta(days=7)
-        task = Task(
-            task_id="T002", title="Test Task", description="Test Description", priority=TaskPriority.MEDIUM, due_date=due_date
-        )
-        result = task.assign_to("USER001")
-        assert result
-        assert task.assigned_to == "USER001"
-        assert task.status == TaskStatus.IN_PROGRESS
-
-    def test_task_status_update(self):
-        due_date = datetime.now() + timedelta(days=7)
-        task = Task(
-            task_id="T003", title="Test Task", description="Test Description", priority=TaskPriority.LOW, due_date=due_date
-        )
-        task.update_status(TaskStatus.DONE)
-        assert task.status == TaskStatus.DONE
-        assert task.completed_at is not None
-
-    def test_task_overdue_check(self):
-        past_date = datetime.now() - timedelta(days=1)
-        task = Task(task_id="T004", title="Overdue Task", description="Test", priority=TaskPriority.URGENT, due_date=past_date)
-        assert task.is_overdue()
-
-
-class TestProject:
-    def test_project_creation(self):
-        start = datetime.now()
-        end = start + timedelta(days=30)
-        project = Project(project_id="P001", name="Test Project", description="Test Desc", start_date=start, end_date=end)
-        assert project.project_id == "P001"
-        assert project.status == ProjectStatus.PLANNING
-        assert len(project.tasks) == 0
-
-    def test_add_task_to_project(self):
-        start = datetime.now()
-        end = start + timedelta(days=30)
-        project = Project(project_id="P002", name="Test Project", description="Test Desc", start_date=start, end_date=end)
-        task = Task(task_id="T005", title="Project Task", description="Task Desc", priority=TaskPriority.HIGH, due_date=end)
-        result = project.add_task(task)
-        assert result
-        assert len(project.tasks) == 1
-
-    def test_add_team_member(self):
-        start = datetime.now()
-        end = start + timedelta(days=30)
-        project = Project(project_id="P003", name="Test Project", description="Test Desc", start_date=start, end_date=end)
-        result = project.add_team_member("USER001")
-        assert result
-        assert "USER001" in project.team_members
-
-    def test_project_task_stats(self):
-        start = datetime.now()
-        end = start + timedelta(days=30)
-        project = Project(project_id="P004", name="Test Project", description="Test Desc", start_date=start, end_date=end)
-        task1 = Task(task_id="T006", title="Task 1", description="Desc", priority=TaskPriority.LOW, due_date=end)
-        task2 = Task(task_id="T007", title="Task 2", description="Desc", priority=TaskPriority.MEDIUM, due_date=end)
-        project.add_task(task1)
-        project.add_task(task2)
-        task1.update_status(TaskStatus.DONE)
-        stats = project.get_task_stats()
-        assert stats["total"] == 2
-        assert stats["completed"] == 1
+class TestOldImplementation:
+    """Test the old, unrefactored code"""
+    
+    def test_old_order_basic_calculation(self):
+        order = OldOrder("ORD001", "John Doe", "john@example.com")
+        order.add_item("Laptop", 1000, 1)
+        order.add_item("Mouse", 25, 2)
+        
+        assert order.calculate_subtotal() == 1050
+        assert order.calculate_tax() == 105
+        assert order.calculate_shipping() == 0  # Free shipping
+        assert order.calculate_total() == 1155
+    
+    def test_old_order_with_discount(self):
+        order = OldOrder("ORD002", "Jane Smith", "jane@example.com")
+        order.add_item("Phone", 500, 1)
+        
+        discount = order.apply_discount_code("SAVE20")
+        assert discount == 100
+        
+        total_with_discount = order.calculate_total_with_discount("SAVE20")
+        assert total_with_discount == 440  # (500-100) + 40 tax + 0 shipping (>100)
+    
+    def test_old_invoice_generation(self):
+        order = OldOrder("ORD003", "Bob Johnson", "bob@example.com")
+        order.add_item("Keyboard", 75, 1)
+        
+        invoice = OldInvoice("INV003", order)
+        invoice_text = invoice.generate_invoice()
+        
+        assert "INVOICE #INV003" in invoice_text
+        assert "Bob Johnson" in invoice_text
+        assert "Keyboard" in invoice_text
 
 
-class TestUser:
-    def test_user_creation(self):
-        user = User(user_id="U001", name="John Doe", email="john@example.com", role="Developer")
-        assert user.user_id == "U001"
-        assert user.completed_tasks_count == 0
+class TestNewImplementation:
+    """Test the refactored, clean code"""
+    
+    def test_new_order_basic_calculation(self):
+        order = NewOrder("ORD001", "John Doe", "john@example.com")
+        order.add_item("Laptop", 1000, 1)
+        order.add_item("Mouse", 25, 2)
+        
+        assert order.calculate_subtotal() == 1050
+        assert order.calculate_tax() == 105
+        assert order.calculate_shipping() == 0
+        assert order.calculate_total() == 1155
+    
+    def test_new_order_with_discount(self):
+        order = NewOrder("ORD002", "Jane Smith", "jane@example.com")
+        order.add_item("Phone", 500, 1)
+        
+        discount = order.apply_discount_code("SAVE20")
+        assert discount == 100
+        
+        total_with_discount = order.calculate_total_with_discount("SAVE20")
+        assert total_with_discount == 440  # (500-100) + 40 tax + 0 shipping
+    
+    def test_new_invoice_generation(self):
+        order = NewOrder("ORD003", "Bob Johnson", "bob@example.com")
+        order.add_item("Keyboard", 75, 1)
+        
+        invoice = NewInvoice("INV003", order)
+        invoice_text = invoice.generate_invoice()
+        
+        assert "INVOICE #INV003" in invoice_text
+        assert "Bob Johnson" in invoice_text
+        assert "Keyboard" in invoice_text
 
-    def test_user_assign_task(self):
-        user = User(user_id="U002", name="Jane Doe", email="jane@example.com", role="Manager")
-        task = Task(
-            task_id="T008",
-            title="User Task",
-            description="Desc",
-            priority=TaskPriority.HIGH,
-            due_date=datetime.now() + timedelta(days=5),
-        )
-        result = user.assign_task(task)
-        assert result
-        assert len(user.assigned_tasks) == 1
 
-    def test_user_complete_task(self):
-        user = User(user_id="U003", name="Bob Smith", email="bob@example.com", role="Developer")
-        task = Task(
-            task_id="T009",
-            title="Complete Task",
-            description="Desc",
-            priority=TaskPriority.MEDIUM,
-            due_date=datetime.now() + timedelta(days=3),
-        )
-        user.assign_task(task)
-        result = user.complete_task(task)
-        assert result
-        assert user.completed_tasks_count == 1
+class TestRefactoringImprovements:
+    """Test the specific improvements from refactoring"""
+    
+    def test_order_item_validation(self):
+        """OrderItem class provides centralized validation"""
+        with pytest.raises(ValueError, match="Price must be positive"):
+            OrderItem("Product", -10, 1)
+        
+        with pytest.raises(ValueError, match="Quantity must be positive"):
+            OrderItem("Product", 10, 0)
+        
+        with pytest.raises(ValueError, match="Product name cannot be empty"):
+            OrderItem("", 10, 1)
+    
+    def test_shipping_calculator_reusability(self):
+        """ShippingCalculator can be used independently"""
+        assert ShippingCalculator.calculate(150) == 0
+        assert ShippingCalculator.calculate(75) == 5
+        assert ShippingCalculator.calculate(25) == 10
+    
+    def test_discount_code_enum(self):
+        """Discount codes use enum instead of magic strings"""
+        assert DiscountCode.SAVE10.value == 0.1
+        assert DiscountCode.SAVE20.value == 0.2
+        assert DiscountCode.SAVE30.value == 0.3
+    
+    def test_price_calculator_caching(self):
+        """PriceCalculator caches subtotal for efficiency"""
+        items = [
+            {"product": "Item1", "price": 100, "quantity": 2},
+            {"product": "Item2", "price": 50, "quantity": 3}
+        ]
+        calculator = PriceCalculator(items)
+        
+        # First call calculates
+        subtotal1 = calculator.get_subtotal()
+        assert subtotal1 == 350
+        
+        # Second call uses cache (same result, no recalculation)
+        subtotal2 = calculator.get_subtotal()
+        assert subtotal2 == 350
+        assert subtotal1 is subtotal2  # Same object reference
 
 
-class TestUtilityFunctions:
-    def test_create_task_with_defaults(self):
-        task = create_task_with_defaults(title="Default Task", description="Test Description")
-        assert task.priority == TaskPriority.MEDIUM
-        assert task.status == TaskStatus.TODO
+class TestCodeComparison:
+    """Compare old vs new implementation results"""
+    
+    def test_both_implementations_produce_same_results(self):
+        """Verify refactoring preserves functionality"""
+        # Old implementation
+        old_order = OldOrder("ORD100", "Test User", "test@example.com")
+        old_order.add_item("Product A", 100, 2)
+        old_order.add_item("Product B", 50, 1)
+        
+        # New implementation
+        new_order = NewOrder("ORD100", "Test User", "test@example.com")
+        new_order.add_item("Product A", 100, 2)
+        new_order.add_item("Product B", 50, 1)
+        
+        # Same results
+        assert old_order.calculate_subtotal() == new_order.calculate_subtotal()
+        assert old_order.calculate_tax() == new_order.calculate_tax()
+        assert old_order.calculate_shipping() == new_order.calculate_shipping()
+        assert old_order.calculate_total() == new_order.calculate_total()
+    
+    def test_discount_calculations_match(self):
+        """Both implementations calculate discounts identically"""
+        old_order = OldOrder("ORD200", "User", "user@test.com")
+        old_order.add_item("Item", 200, 1)
+        
+        new_order = NewOrder("ORD200", "User", "user@test.com")
+        new_order.add_item("Item", 200, 1)
+        
+        for code in ["SAVE10", "SAVE20", "SAVE30"]:
+            old_discount = old_order.apply_discount_code(code)
+            new_discount = new_order.apply_discount_code(code)
+            assert old_discount == new_discount
+            
+            old_total = old_order.calculate_total_with_discount(code)
+            new_total = new_order.calculate_total_with_discount(code)
+            assert old_total == new_total
 
-    def test_calculate_project_progress(self):
-        start = datetime.now()
-        end = start + timedelta(days=30)
-        project = Project(project_id="P005", name="Progress Test", description="Test", start_date=start, end_date=end)
-        task1 = Task(task_id="T010", title="Task 1", description="Desc", priority=TaskPriority.LOW, due_date=end)
-        task2 = Task(task_id="T011", title="Task 2", description="Desc", priority=TaskPriority.LOW, due_date=end)
-        project.add_task(task1)
-        project.add_task(task2)
-        task1.update_status(TaskStatus.DONE)
-        progress = calculate_project_progress(project)
-        assert progress == 50.0
 
-    def test_find_overdue_tasks(self):
-        past_date = datetime.now() - timedelta(days=1)
-        future_date = datetime.now() + timedelta(days=1)
-        task1 = Task(task_id="T012", title="Overdue", description="Desc", priority=TaskPriority.HIGH, due_date=past_date)
-        task2 = Task(task_id="T013", title="On Time", description="Desc", priority=TaskPriority.LOW, due_date=future_date)
-        overdue = find_overdue_tasks([task1, task2])
-        assert len(overdue) == 1
-        assert overdue[0].task_id == "T012"
-
-    def test_get_high_priority_tasks(self):
-        due = datetime.now() + timedelta(days=7)
-        task1 = Task(task_id="T014", title="High", description="Desc", priority=TaskPriority.HIGH, due_date=due)
-        task2 = Task(task_id="T015", title="Low", description="Desc", priority=TaskPriority.LOW, due_date=due)
-        task3 = Task(task_id="T016", title="Urgent", description="Desc", priority=TaskPriority.URGENT, due_date=due)
-        high_priority = get_high_priority_tasks([task1, task2, task3])
-        assert len(high_priority) == 2
-
-    def test_estimate_project_delay(self):
-        past_end = datetime.now() - timedelta(days=5)
-        start = past_end - timedelta(days=30)
-        project = Project(project_id="P006", name="Delayed Project", description="Test", start_date=start, end_date=past_end)
-        delay = estimate_project_delay(project)
-        assert delay >= 5
+class TestRefactoringBenefits:
+    """Demonstrate benefits of refactored code"""
+    
+    def test_reduced_code_duplication(self):
+        """New code eliminates subtotal calculation duplication"""
+        order = NewOrder("ORD300", "Customer", "customer@email.com")
+        order.add_item("Product", 100, 3)
+        
+        # All methods use same calculator instance
+        calculator = order._get_calculator()
+        
+        # Calling multiple times doesn't recalculate (uses cache)
+        subtotal1 = calculator.get_subtotal()
+        subtotal2 = calculator.get_subtotal()
+        tax = calculator.get_tax()
+        shipping = calculator.get_shipping()
+        
+        assert subtotal1 == subtotal2 == 300
+        assert tax == 30
+        assert shipping == 0
+    
+    def test_easier_to_extend(self):
+        """New structure makes it easy to add features"""
+        # Can easily create custom calculators
+        items = [{"product": "Item", "price": 50, "quantity": 4}]
+        calculator = PriceCalculator(items)
+        
+        # Easy to add new discount codes via enum
+        assert "SAVE10" in DiscountCode.__members__
+        assert "SAVE20" in DiscountCode.__members__
+        assert "SAVE30" in DiscountCode.__members__
+    
+    def test_better_separation_of_concerns(self):
+        """Each class has single responsibility"""
+        # OrderItem handles validation
+        item = OrderItem("Product", 50, 2)
+        assert item.get_line_total() == 100
+        
+        # ShippingCalculator handles shipping
+        assert ShippingCalculator.calculate(60) == 5
+        
+        # PriceCalculator handles all calculations
+        calculator = PriceCalculator([item.to_dict()])
+        assert calculator.get_subtotal() == 100
+        assert calculator.get_tax() == 10
